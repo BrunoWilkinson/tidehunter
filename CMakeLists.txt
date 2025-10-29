@@ -8,8 +8,11 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 # prevent installing to system directories. 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE INTERNAL "")
 
+# generate compile_commands.json for lsp
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Declare the project
-project(sdl-min)
+project(tidehunter)
 
 if ((APPLE AND NOT CMAKE_SYSTEM_NAME MATCHES "Darwin") OR EMSCRIPTEN)
     set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")    # Disable shared builds on platforms where it does not make sense to use them
@@ -36,11 +39,34 @@ else()
 	add_executable(${EXECUTABLE_NAME})
 endif()
 
+include_directories(
+  imgui
+  imgui/backends
+)
+
 # Add your sources to the target
 target_sources(${EXECUTABLE_NAME} 
-PRIVATE 
-    src/main.cpp
-    src/iosLaunchScreen.storyboard
+  PRIVATE 
+  src/main.cpp
+  src/GameState.h
+  src/MainMenuState.cpp
+  src/MainMenuState.h
+  src/iosLaunchScreen.storyboard
+  imgui/imconfig.h
+  imgui/imgui.h
+  imgui/imgui.cpp
+  imgui/imgui_demo.cpp
+  imgui/imgui_draw.cpp
+  imgui/imgui_internal.h
+  imgui/imgui_tables.cpp
+  imgui/imgui_widgets.cpp
+  imgui/imstb_rectpack.h
+  imgui/imstb_textedit.h
+  imgui/imstb_truetype.h
+  imgui/backends/imgui_impl_sdl3.h
+  imgui/backends/imgui_impl_sdl3.cpp
+  imgui/backends/imgui_impl_sdlrenderer3.h
+  imgui/backends/imgui_impl_sdlrenderer3.cpp
 )
 # What is iosLaunchScreen.storyboard? This file describes what Apple's mobile platforms
 # should show the user while the application is starting up. If you don't include one,
@@ -92,12 +118,23 @@ set(SDLIMAGE_JPEG OFF)
 set(SDLIMAGE_WEBP OFF)
 add_subdirectory(SDL_image EXCLUDE_FROM_ALL)
 
+# Reliable & unreliable messages over UDP. 
+# Robust message fragmentation & reassembly. 
+# P2P networking / NAT traversal. Encryption.
+add_subdirectory(GameNetworkingSockets EXCLUDE_FROM_ALL)
+
+# OpenGL Mathematics (GLM)
+set(GLM_BUILD_LIBRARY OFF)
+add_subdirectory(glm EXCLUDE_FROM_ALL)
+
 # Link SDL to our executable. This also makes its include directory available to us. 
 target_link_libraries(${EXECUTABLE_NAME} PUBLIC 
 	SDL3_ttf::SDL3_ttf      # remove if you are not using SDL_ttf
 	SDL3_mixer::SDL3_mixer  # remove if you are not using SDL_mixer
 	SDL3_image::SDL3_image	# remove if you are not using SDL_image
-    SDL3::SDL3              # If using satelite libraries, SDL must be the last item in the list. 
+  GameNetworkingSockets::GameNetworkingSockets
+  glm::glm
+  SDL3::SDL3              # If using satelite libraries, SDL must be the last item in the list. 
 )
 
 # SDL_Image bug: https://github.com/libsdl-org/SDL_image/issues/506
@@ -178,8 +215,8 @@ set_target_properties(${EXECUTABLE_NAME} PROPERTIES
     XCODE_GENERATE_SCHEME TRUE
     # Identification for Xcode
     XCODE_ATTRIBUTE_BUNDLE_IDENTIFIER "com.ravbug.sdl3-sample"
-	XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.ravbug.sdl3-sample"
-	XCODE_ATTRIBUTE_CURRENTYEAR "${CURRENTYEAR}"
+	  XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.ravbug.sdl3-sample"
+	  XCODE_ATTRIBUTE_CURRENTYEAR "${CURRENTYEAR}"
     RESOURCE "${RESOURCE_FILES}"
 )
 
