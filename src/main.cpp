@@ -18,19 +18,20 @@ static GameState *GameStateInstance = nullptr;
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   const SDL_WindowFlags window_flags =
       SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-  const char *title = "Tidehunter";
-  window = SDL_CreateWindow(title, 1280, 720, window_flags);
+
+  window = SDL_CreateWindow("Tidehunter", 1280, 720, window_flags);
   if (window == nullptr) {
     SDL_Log("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
     return SDL_APP_FAILURE;
   }
 
   renderer = SDL_CreateRenderer(window, nullptr);
-  SDL_SetRenderVSync(renderer, 1);
   if (renderer == nullptr) {
     SDL_Log("Error: SDL_CreateRenderer(): %s\n", SDL_GetError());
     return SDL_APP_FAILURE;
   }
+
+  SDL_SetRenderVSync(renderer, 1);
   SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   SDL_ShowWindow(window);
 
@@ -65,6 +66,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
+  assert(event != nullptr);
+
   ImGui_ImplSDL3_ProcessEvent(event);
 
   if (event->type == SDL_EVENT_QUIT) {
@@ -77,6 +80,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
+  assert(renderer != nullptr);
+
   ImGui_ImplSDLRenderer3_NewFrame();
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
