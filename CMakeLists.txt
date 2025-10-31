@@ -14,7 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Declare the project
 project(tidehunter)
 
-if ((APPLE AND NOT CMAKE_SYSTEM_NAME MATCHES "Darwin") OR EMSCRIPTEN)
+if (EMSCRIPTEN)
     set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")    # Disable shared builds on platforms where it does not make sense to use them
     set(SDL_SHARED OFF)
 else()
@@ -30,28 +30,25 @@ endif()
 # Set the name of the executable
 set(EXECUTABLE_NAME ${PROJECT_NAME})
 
-# Create an executable or a shared library based on the platform and add our sources to it
-if (ANDROID)
-	# The SDL java code is hardcoded to load libmain.so on android, so we need to change EXECUTABLE_NAME
-	set(EXECUTABLE_NAME main)
-	add_library(${EXECUTABLE_NAME} SHARED)
-else()
-	add_executable(${EXECUTABLE_NAME})
-endif()
+add_executable(${EXECUTABLE_NAME})
 
 include_directories(
   imgui
   imgui/backends
+  src/engine
+  src/game
 )
 
 # Add your sources to the target
 target_sources(${EXECUTABLE_NAME} 
   PRIVATE 
   src/main.cpp
-  src/GameState.h
-  src/MainMenuState.cpp
-  src/MainMenuState.h
-  src/iosLaunchScreen.storyboard
+  src/engine/Object.h
+  src/engine/ui/Button.h
+  src/engine/ui/Button.cpp
+  src/game/GameState.h
+  src/game/MainMenuState.cpp
+  src/game/MainMenuState.h
   imgui/imconfig.h
   imgui/imgui.h
   imgui/imgui.cpp
@@ -68,17 +65,6 @@ target_sources(${EXECUTABLE_NAME}
   imgui/backends/imgui_impl_sdlrenderer3.h
   imgui/backends/imgui_impl_sdlrenderer3.cpp
 )
-# What is iosLaunchScreen.storyboard? This file describes what Apple's mobile platforms
-# should show the user while the application is starting up. If you don't include one,
-# then you get placed in a compatibility mode that does not allow HighDPI.
-# This file is referenced inside Info.plist.in, where it is marked as the launch screen file.
-# It is also ignored on non-Apple platforms. 
-
-# To get an app icon on Apple platforms, add it to your executable.
-# Afterward, the image file in Info.plist.in.
-if(APPLE)
-    target_sources("${EXECUTABLE_NAME}" PRIVATE "src/logo.png")
-endif()
 
 # Set C++ version
 target_compile_features(${EXECUTABLE_NAME} PUBLIC cxx_std_20)
@@ -138,7 +124,7 @@ target_link_libraries(${EXECUTABLE_NAME} PUBLIC
 )
 
 # SDL_Image bug: https://github.com/libsdl-org/SDL_image/issues/506
-if (APPLE AND NOT BUILD_SHARED_LIBS)
+if (NOT BUILD_SHARED_LIBS)
     find_library(IO_LIB ImageIO REQUIRED)
     find_library(CS_LIB CoreServices REQUIRED)
     find_library(CT_LIB CoreText REQUIRED)
@@ -149,96 +135,27 @@ endif()
 
 # Dealing with assets
 # We have some non-code resources that our application needs in order to work. How we deal with those differs per platform.
-if (APPLE)
-    # on Apple targets, the application bundle has a "resources" subfolder where we can place our assets.
-    # SDL_GetBasePath() gives us easy access to that location.
-    set(input_root "${CMAKE_CURRENT_LIST_DIR}/src")
-    macro(add_resource FILE)
-        file(RELATIVE_PATH relpath "${input_root}" "${FILE}")
-        get_filename_component(relpath "${relpath}" DIRECTORY)
-        target_sources(${EXECUTABLE_NAME} PRIVATE ${FILE})
-        set_property(SOURCE ${FILE} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/${relpath}")
-    endmacro()
-    add_resource("${CMAKE_CURRENT_LIST_DIR}/src/Inter-VariableFont.ttf")
-    add_resource("${CMAKE_CURRENT_LIST_DIR}/src/the_entertainer.ogg")
-    add_resource("${CMAKE_CURRENT_LIST_DIR}/src/gs_tiger.svg")
-elseif(EMSCRIPTEN)
+if(EMSCRIPTEN)
     # on the web, we have to put the files inside of the webassembly
     # somewhat unintuitively, this is done via a linker argument.
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE 
-        "--preload-file \"${CMAKE_CURRENT_LIST_DIR}/src/Inter-VariableFont.ttf@/\""
-        "--preload-file \"${CMAKE_CURRENT_LIST_DIR}/src/the_entertainer.ogg@/\""
-        "--preload-file \"${CMAKE_CURRENT_LIST_DIR}/src/gs_tiger.svg@/\""
+        "--preload-file \"${CMAKE_CURRENT_LIST_DIR}/src/assets/fonts/Inter-VariableFont.ttf@/\""
     )
 else()
-    if (ANDROID)
-        if (NOT MOBILE_ASSETS_DIR)
-            message(FATAL_ERROR "Building for Android, but MOBILE_ASSETS_DIR is not set")
-        endif()
-        file(MAKE_DIRECTORY "${MOBILE_ASSETS_DIR}")    # we need to create the project Assets dir otherwise CMake won't copy our assets.
-    endif()
-
-    
     macro(copy_helper filename)
-        if (ANDROID)
-            # MOBILE_ASSETS_DIR is set in the gradle file via the cmake command line and points to the Android Studio Assets folder. 
-            # when we copy assets there, the Android build pipeline knows to add them to the apk. 
-            set(outname "${MOBILE_ASSETS_DIR}/${filename}")    
-        else()
-            # for platforms that do not have a good packaging format, all we can do is copy the assets to the process working directory.
-            set(outname "${CMAKE_BINARY_DIR}/$<CONFIGURATION>/${filename}")
-        endif()
+        # for platforms that do not have a good packaging format, all we can do is copy the assets to the process working directory.
+        set(outname "${CMAKE_BINARY_DIR}/$<CONFIGURATION>/${filename}")
         add_custom_command(POST_BUILD
             TARGET "${EXECUTABLE_NAME}"
 		    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_LIST_DIR}/src/${filename}" "${outname}"
 	    )
     endmacro()
-    copy_helper("Inter-VariableFont.ttf")
-    copy_helper("the_entertainer.ogg")
-    copy_helper("gs_tiger.svg")
+    copy_helper("assets/fonts/Inter-VariableFont.ttf")
 endif()
 
 # set some extra configs for each platform
-set(RESOURCE_FILES "src/logo.png")
-if(IOS)
-    set(RESOURCE_FILES "src/iosLaunchScreen.storyboard;src/logo.png") # make the splash screen show up on iOS
-endif()
-
-set_target_properties(${EXECUTABLE_NAME} PROPERTIES 
-    # On macOS, make a proper .app bundle instead of a bare executable
-    MACOSX_BUNDLE TRUE
-    # Set the Info.plist file for Apple Mobile platforms. Without this file, your app
-    # will not launch. 
-    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/Info.plist.in"
-
-    # in Xcode, create a Scheme in the schemes dropdown for the app.
-    XCODE_GENERATE_SCHEME TRUE
-    # Identification for Xcode
-    XCODE_ATTRIBUTE_BUNDLE_IDENTIFIER "com.ravbug.sdl3-sample"
-	  XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.ravbug.sdl3-sample"
-	  XCODE_ATTRIBUTE_CURRENTYEAR "${CURRENTYEAR}"
-    RESOURCE "${RESOURCE_FILES}"
-)
+set(RESOURCE_FILES "src/assets/logo.png")
 
 # on Visual Studio, set our app as the default project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT "${EXECUTABLE_NAME}")
 
-# On macOS Platforms, ensure that the bundle is valid for distribution by calling fixup_bundle.
-# note that fixup_bundle does not work on iOS, so you will want to use static libraries 
-# or manually copy dylibs and set rpaths
-if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    # tell Install about the target, otherwise fixup won't know about the transitive dependencies
-    install(TARGETS ${EXECUTABLE_NAME}
-    	BUNDLE DESTINATION ./install COMPONENT Runtime
-   	    RUNTIME DESTINATION ./install/bin COMPONENT Runtime
-    )
-	
-    set(DEP_DIR "${CMAKE_BINARY_DIR}")  # where to look for dependencies when fixing up
-    INSTALL(CODE 
-        "include(BundleUtilities)
-        fixup_bundle(\"$<TARGET_BUNDLE_DIR:${EXECUTABLE_NAME}>\" \"\" \"${DEP_DIR}\")
-        " 
-    )
-    set(CPACK_GENERATOR "DragNDrop")
-    include(CPack)
-endif()

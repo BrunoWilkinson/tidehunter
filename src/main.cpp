@@ -6,8 +6,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
-#include "GameState.h"
-#include "MainMenuState.h"
+#include "game/GameState.h"
+#include "game/MainMenuState.h"
 
 static SDL_Window *window = nullptr;
 static SDL_Renderer *renderer = nullptr;
