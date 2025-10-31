@@ -4,7 +4,7 @@ See [src/main.cpp](src/main.cpp) for the code.
 ### Building And Running
 Install CMake and your favorite compiler, and follow the commands below:
 ```sh
-# You need to clone with submodules, otherwise SDL will not download.
+# You need to clone with submodules
 git clone https://github.com/BrunoWilkinson/tidehunter.git --depth=1 --recurse-submodules
 cd tidehunter
 cmake -S . -B build
