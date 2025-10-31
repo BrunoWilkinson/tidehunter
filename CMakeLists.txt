@@ -32,38 +32,59 @@ set(EXECUTABLE_NAME ${PROJECT_NAME})
 
 add_executable(${EXECUTABLE_NAME})
 
-include_directories(
-  imgui
-  imgui/backends
-  src/engine
-  src/game
-)
-
 # Add your sources to the target
 target_sources(${EXECUTABLE_NAME} 
   PRIVATE 
   src/main.cpp
-  src/engine/Object.h
-  src/engine/ui/Button.h
-  src/engine/ui/Button.cpp
-  src/game/GameState.h
-  src/game/MainMenuState.cpp
-  src/game/MainMenuState.h
-  imgui/imconfig.h
-  imgui/imgui.h
-  imgui/imgui.cpp
-  imgui/imgui_demo.cpp
-  imgui/imgui_draw.cpp
-  imgui/imgui_internal.h
-  imgui/imgui_tables.cpp
-  imgui/imgui_widgets.cpp
-  imgui/imstb_rectpack.h
-  imgui/imstb_textedit.h
-  imgui/imstb_truetype.h
-  imgui/backends/imgui_impl_sdl3.h
-  imgui/backends/imgui_impl_sdl3.cpp
-  imgui/backends/imgui_impl_sdlrenderer3.h
-  imgui/backends/imgui_impl_sdlrenderer3.cpp
+  src/GameState.h
+  src/MainMenuState.cpp
+  src/MainMenuState.h
+)
+
+add_library(engine)
+target_sources(engine
+  PRIVATE
+    src/engine/ui/Button.cpp
+
+  PUBLIC
+  FILE_SET HEADERS
+  BASE_DIRS
+    src/engine
+  FILES
+    src/engine/Object.h
+    src/engine/ui/Button.h
+)
+
+add_library(imgui)
+target_sources(imgui
+  PRIVATE
+    imgui/imgui.cpp
+    imgui/imgui_demo.cpp
+    imgui/imgui_draw.cpp
+    imgui/imgui_tables.cpp
+    imgui/imgui_widgets.cpp
+    imgui/backends/imgui_impl_sdl3.cpp
+    imgui/backends/imgui_impl_sdlrenderer3.cpp
+
+  PUBLIC
+    FILE_SET HEADERS
+    BASE_DIRS
+      imgui
+    FILES
+      imgui/imconfig.h
+      imgui/imgui.h
+      imgui/imgui_internal.h
+      imgui/imstb_rectpack.h
+      imgui/imstb_textedit.h
+      imgui/imstb_truetype.h
+      imgui/backends/imgui_impl_sdl3.h
+      imgui/backends/imgui_impl_sdlrenderer3.h
+)
+
+target_link_libraries(${EXECUTABLE_NAME}
+  PRIVATE
+    imgui
+    engine
 )
 
 # Set C++ version

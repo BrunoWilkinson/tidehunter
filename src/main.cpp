@@ -1,13 +1,13 @@
+#include "backends/imgui_impl_sdl3.h"
+#include "backends/imgui_impl_sdlrenderer3.h"
 #include "imgui.h"
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_sdlrenderer3.h"
 
 #define SDL_MAIN_USE_CALLBACKS 1 /* use the callbacks instead of main() */
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
-#include "game/GameState.h"
-#include "game/MainMenuState.h"
+#include "GameState.h"
+#include "MainMenuState.h"
 
 static SDL_Window *window = nullptr;
 static SDL_Renderer *renderer = nullptr;
