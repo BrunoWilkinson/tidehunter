@@ -8,6 +8,7 @@ Install CMake and your favorite compiler, and follow the commands below:
 git clone https://github.com/BrunoWilkinson/tidehunter.git --depth=1 --recurse-submodules
 cd tidehunter
 cmake -S . -B build
+cmake --build build
 ```
 You can also use an init script inside [`config/`](config/). Then open the IDE project inside `build/` 
 (If you had CMake generate one) and run!
