@@ -27,6 +27,9 @@ if(MSVC)
     endif()
 endif()
 
+if (CMAKE_CONFIGURATION_TYPES)
+endif()
+
 # Set the name of the executable
 set(EXECUTABLE_NAME ${PROJECT_NAME})
 
@@ -83,7 +86,7 @@ target_sources(imgui
 
 target_link_libraries(${EXECUTABLE_NAME}
   PRIVATE
-    imgui
+    $<$<NOT:$<CONFIG:Release>>:imgui> 
     engine
 )
 

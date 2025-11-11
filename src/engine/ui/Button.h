@@ -1,12 +1,13 @@
 #ifndef BUTTON_H
 #define BUTTON_H
 
-#include <SDL3/SDL.h>
+#include "Object.h"
 
-class Button {
+class Button : public Object {
 public:
-  void Render();
-  void ImGui();
+#ifndef NDEBUG
+  void ImGui(SDL_Renderer *renderer) override;
+#endif
 
 private:
   bool m_isHover = false;

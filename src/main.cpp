@@ -1,10 +1,13 @@
+#ifndef NDEBUG
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_sdlrenderer3.h"
 #include "imgui.h"
+#endif
 
 #define SDL_MAIN_USE_CALLBACKS 1 /* use the callbacks instead of main() */
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <cassert>
 
 #include "GameState.h"
 #include "MainMenuState.h"
@@ -35,6 +38,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   SDL_ShowWindow(window);
 
+#ifndef NDEBUG
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
@@ -54,6 +58,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
   ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
   ImGui_ImplSDLRenderer3_Init(renderer);
+#endif
 
   MainMenuStateInstance = new MainMenuState();
   GameStateInstance = MainMenuStateInstance;
@@ -68,7 +73,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
   assert(event != nullptr);
 
+#ifndef NDEBUG
   ImGui_ImplSDL3_ProcessEvent(event);
+#endif
 
   if (event->type == SDL_EVENT_QUIT) {
     // end the program, reporting success to the OS.
@@ -82,15 +89,19 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 SDL_AppResult SDL_AppIterate(void *appstate) {
   assert(renderer != nullptr);
 
+#ifndef NDEBUG
   ImGui_ImplSDLRenderer3_NewFrame();
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
 
-  GameStateInstance->ImGui();
+  GameStateInstance->ImGui(renderer);
+#endif
   GameStateInstance->Render(appstate, renderer);
 
+#ifndef NDEBUG
   ImGui::Render();
   ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
+#endif
   SDL_RenderPresent(renderer);
 
   return SDL_APP_CONTINUE;
@@ -100,8 +111,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
   delete MainMenuStateInstance;
 
+#ifndef NDEBUG
   ImGui_ImplSDLRenderer3_Shutdown();
   ImGui_ImplSDL3_Shutdown();
 
   ImGui::DestroyContext();
+#endif
 }

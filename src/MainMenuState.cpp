@@ -1,4 +1,6 @@
+#ifndef NDEBUG
 #include "imgui.h"
+#endif
 
 #include "MainMenuState.h"
 
@@ -27,7 +29,6 @@ SDL_AppResult MainMenuState::Input(void *appstate, const SDL_Event *event) {
 }
 
 void MainMenuState::Render(void *appstate, SDL_Renderer *renderer) {
-  const ImGuiIO &io = ImGui::GetIO();
   const char *message = "Hello World!";
   const float scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
   /* Center the message and scale it up */
@@ -41,19 +42,21 @@ void MainMenuState::Render(void *appstate, SDL_Renderer *renderer) {
   const float y = (h / scale - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE) / 2;
 
   /* Draw the message */
-  SDL_SetRenderScale(renderer, io.DisplayFramebufferScale.x,
-                     io.DisplayFramebufferScale.y);
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
   SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
   SDL_RenderDebugText(renderer, x, y, message);
 }
 
-void MainMenuState::ImGui() {
+#ifndef NDEBUG
+void MainMenuState::ImGui(SDL_Renderer *renderer) {
   const ImGuiIO &io = ImGui::GetIO();
+  SDL_SetRenderScale(renderer, io.DisplayFramebufferScale.x,
+                     io.DisplayFramebufferScale.y);
   ImGui::Begin("Main Menu");
   ImGui::Text("This is some useful text.");
   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
               1000.0f / io.Framerate, io.Framerate);
   ImGui::End();
 }
+#endif

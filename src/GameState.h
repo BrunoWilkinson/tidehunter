@@ -1,7 +1,7 @@
 #ifndef GAMESTATE_H
 #define GAMESTATE_H
 
-#include <Object.h>
+#include "Object.h"
 
 enum class EGameState { MENU, LOBBY, BATTLE, SETTINGS, NONE };
 
